@@ -1,15 +1,16 @@
 package com.seven.jong.service.hosting;
 
-import com.seven.jong.DTO.QnaDTO;
-import com.seven.jong.DTO.hosting.AccommodationDTO;
-import com.seven.jong.DTO.hosting.ReservationAddRequestDTO;
-import com.seven.jong.DTO.hosting.ReservationAdminDTO;
-import com.seven.jong.DTO.hosting.ReservationDTO;
+import com.seven.jong.DTO.common.PageDTO;
+import com.seven.jong.DTO.common.SearchDTO;
+import com.seven.jong.DTO.hosting.*;
+import com.seven.jong.VO.hosting.AccommodationVO;
 import com.seven.jong.VO.hosting.ReservationVO;
 import com.seven.jong.VO.security.UserSecurityVO;
+import com.seven.jong.repository.hosting.IAccommodationMapper;
 import com.seven.jong.repository.hosting.IReservationMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.ui.Model;
 
@@ -20,59 +21,105 @@ import java.util.List;
 public class ReservationService implements IReservationService{
 
     IReservationMapper reservationMapper;
+    IAccommodationMapper accommodationMapper;
+    IAccommodationService accommodationService;
     @Autowired
     public void setReservationMapper(IReservationMapper reservationMapper) {
         this.reservationMapper = reservationMapper;
     }
+    @Autowired
+    public void setAccommodationMapper(IAccommodationMapper accommodationMapper) {
+        this.accommodationMapper = accommodationMapper;
+    }
+    @Autowired
+    public void setAccommodationService(IAccommodationService accommodationService) {
+        this.accommodationService = accommodationService;
+    }
 
     @Override
     public void addReservation(ReservationAddRequestDTO reservationAddRequestDTO, Authentication authentication) {
+
         reservationMapper.addReservation(
                 ReservationVO.builder()
                         .accommodationId(reservationAddRequestDTO.getAccommodationId())
                         .userId(((UserSecurityVO)authentication.getPrincipal()).getUser().getUserId())
                         .checkIn(reservationAddRequestDTO.getCheckIn())
                         .checkOut(reservationAddRequestDTO.getCheckOut())
+                        .numberOfGuest(reservationAddRequestDTO.getNumberOfGuest())
                         .build()
         );
 
     }
 
     @Override
-    public void updateReservation(ReservationAddRequestDTO reservationAddRequestDTO, Authentication authentication) {
+    public void updateReservation(ReservationUpdateDTO reservationUpdateDTO, Authentication authentication) {
 
+
+        reservationMapper.updateReservation(
+                ReservationVO.builder()
+                        .reservationId(reservationUpdateDTO.getReservationId())
+                        .numberOfGuest(reservationUpdateDTO.getNumberOfGuest())
+                        .checkIn(reservationUpdateDTO.getCheckIn())
+                        .checkOut(reservationUpdateDTO.getCheckOut())
+                        .build()
+        );
     }
 
     @Override
-    public ReservationVO getReservationById(Integer reservationId) {
-        return reservationMapper.getOneById(reservationId);
+    public ReservationInfoResponseDTO getReservationById(Integer reservationId) {
+        ReservationVO reservationVO = reservationMapper.getOneById(reservationId);
+        ReservationInfoResponseDTO reservationInfoResponseDTO = new ReservationInfoResponseDTO();
+        reservationInfoResponseDTO.setReservationId(reservationVO.getReservationId());
+        reservationInfoResponseDTO.setAccommodationId(reservationVO.getAccommodationId());
+        reservationInfoResponseDTO.setCheckIn(reservationVO.getCheckIn());
+        reservationInfoResponseDTO.setCheckOut(reservationVO.getCheckOut());
+        reservationInfoResponseDTO.setNumberOfGuest(reservationVO.getNumberOfGuest());
+        reservationInfoResponseDTO.setRegDate(reservationVO.getRegDate());
+        reservationInfoResponseDTO.setAccommodation(accommodationService.getOneById(reservationVO.getAccommodationId()));
+        return reservationInfoResponseDTO;
     }
 
     @Override
-    public ReservationVO getReservationByUser(Integer UserId) {
-        return null;
+    public List<ReservationListResponseDTO> getAllReservationsByUser(Authentication authentication, PageDTO pageDTO) {
+        pageDTO.setUserId(((UserSecurityVO)authentication.getPrincipal()).getUser().getUserId());
+        List<ReservationVO> reservationVOList = reservationMapper.getAllByUser(pageDTO);
+        List<ReservationListResponseDTO> reservationListResponseDTOList = new ArrayList<>();
+        reservationVOList.forEach(vo -> {
+            ReservationListResponseDTO dto = new ReservationListResponseDTO();
+            dto.setReservationId(vo.getReservationId());
+            dto.setAccommodationId(vo.getAccommodationId());
+            dto.setCheckIn(vo.getCheckIn());
+            dto.setCheckOut(vo.getCheckOut());
+            dto.setUserId(vo.getUserId());
+            dto.setNumberOfGuest(vo.getNumberOfGuest());
+            dto.setRegDate(vo.getRegDate());
+            AccommodationVO accommodationVO = accommodationMapper.getOneById(vo.getAccommodationId());
+            dto.setName(accommodationVO.getName());
+            dto.setPrice(accommodationVO.getPrice());
+            reservationListResponseDTOList.add(dto);
+        });
+        return reservationListResponseDTOList;
     }
 
     @Override
-    public List<ReservationVO> getAllReservations() {
-        return null;
+    public boolean deleteReservation(Integer reservationId, Authentication authentication) {
+        if(reservationMapper.getOneById(reservationId).getUserId().equals(((UserSecurityVO) authentication.getPrincipal()).getUser().getUserId()) || authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))){
+            reservationMapper.deleteReservation(reservationId);
+            return true;
+        }
+        return false;
     }
 
     @Override
-    public void deleteReservationWithId(Integer reservationId) {
-        reservationMapper.deleteReservation(reservationId);
+    public Integer getNumberOfReservationByUserId(Integer userId) {
+        return reservationMapper.getNumberOfReservationByUserId(userId);
     }
 
-    @Override
-    public void deleteReservationWithUser(Integer userId) {
-
-    }
-    
     //총 예약 수 가져오기
     @Override
 	public int numberOfReservation() {
-    	int allCount = reservationMapper.reservationCount(); // 총 예약수 얻어오기
-		return allCount;
+        // 총 예약수 얻어오기
+		return reservationMapper.reservationCount();
 	}
     
     //예약정보 리스트 가져오기

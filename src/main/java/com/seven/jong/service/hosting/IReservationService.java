@@ -1,7 +1,8 @@
 package com.seven.jong.service.hosting;
 
-import com.seven.jong.DTO.hosting.ReservationAddRequestDTO;
-import com.seven.jong.DTO.hosting.ReservationDTO;
+import com.seven.jong.DTO.common.PageDTO;
+import com.seven.jong.DTO.common.SearchDTO;
+import com.seven.jong.DTO.hosting.*;
 import com.seven.jong.VO.hosting.AccommodationVO;
 import com.seven.jong.VO.hosting.ReservationVO;
 
@@ -15,20 +16,18 @@ public interface IReservationService {
 
     void addReservation(ReservationAddRequestDTO reservationAddRequestDTO, Authentication authentication);
 
-    void updateReservation(ReservationAddRequestDTO reservationAddRequestDTO, Authentication authentication);
+    void updateReservation(ReservationUpdateDTO reservationUpdateDTO, Authentication authentication);
 
-    ReservationVO getReservationById(Integer reservationId);
+    ReservationInfoResponseDTO getReservationById(Integer reservationId);
 
-    ReservationVO getReservationByUser(Integer UserId);
+    List<ReservationListResponseDTO> getAllReservationsByUser(Authentication authentication, PageDTO pageDTO);
 
-    List<ReservationVO> getAllReservations();
+    boolean deleteReservation(Integer reservationId, Authentication authentication);
 
-    void deleteReservationWithId(Integer reservationId);
 
-    void deleteReservationWithUser(Integer userId);
-
+    Integer getNumberOfReservationByUserId(Integer userId);
     //총 예약 수 가져오기
-    public int numberOfReservation();
+    int numberOfReservation();
     
     //예약정보 리스트 가져오기
     void reservationList(int pageNum, Model model);

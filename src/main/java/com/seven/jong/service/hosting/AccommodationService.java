@@ -1,6 +1,9 @@
 package com.seven.jong.service.hosting;
 
-import com.seven.jong.DTO.hosting.AccommodationDTO;
+import com.seven.jong.DTO.common.PageDTO;
+import com.seven.jong.DTO.common.SearchDTO;
+import com.seven.jong.DTO.hosting.AccommodationAddressRequestDTO;
+import com.seven.jong.DTO.hosting.AccommodationHouseRequestDTO;
 import com.seven.jong.DTO.hosting.AccommodationInfoResponseDTO;
 import com.seven.jong.VO.hosting.AccommodationPhotoVO;
 import com.seven.jong.VO.hosting.AccommodationTempVO;
@@ -11,12 +14,11 @@ import com.seven.jong.repository.hosting.IAccommodationPhotoMapper;
 import com.seven.jong.service.FilePath;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
-import org.springframework.ui.Model;
 import org.springframework.util.FileCopyUtils;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -71,9 +73,9 @@ public class AccommodationService implements IAccommodationService {
     }
 
     @Override
-    public List<AccommodationVO> getAllByUserId(Authentication authentication) {
-
-        return accommodationMapper.getAllByUserId(((UserSecurityVO)authentication.getPrincipal()).getUser().getUserId());
+    public List<AccommodationVO> getAllByUserId(Authentication authentication, PageDTO pageDTO) {
+        pageDTO.setUserId(((UserSecurityVO)authentication.getPrincipal()).getUser().getUserId());
+        return accommodationMapper.getAllByUserId(pageDTO);
     }
 
     @Override
@@ -104,31 +106,91 @@ public class AccommodationService implements IAccommodationService {
     @Override
     public void getPhoto(Integer accommodationId, String url, HttpServletResponse response) {
 
-        System.out.println(filePath.getPath()+url);
-        response.addHeader("Content-disposition","attachment;fileName"+url);
-        try {
-            FileCopyUtils.copy(new FileInputStream(filePath.getPath()+ url), response.getOutputStream());
-        }catch (Exception e){
-            e.printStackTrace();
+        if(url == null || url.equals("")){
+            String one = "";
+            try{
+                one= accommodationPhotoMapper.getPhotos(accommodationId).get(0).getPhotoURL();
+            }catch (Exception e){
+                System.out.println("등록된 사진없음!");
+                return;
+            }
+            response.addHeader("Content-disposition","attachment;fileName"+one);
+            try {
+                FileCopyUtils.copy(new FileInputStream(filePath.getPath()+ one), response.getOutputStream());
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+            System.out.println(filePath.getPath()+one);
+        }else{
+            response.addHeader("Content-disposition","attachment;fileName"+url);
+            try {
+                FileCopyUtils.copy(new FileInputStream(filePath.getPath()+ url), response.getOutputStream());
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+            System.out.println(filePath.getPath()+url);
         }
+
+
     }
 
     @Override
-    public void houseList(int pageNum, Model model) {
-        int allCount = accommodationMapper.selectHouseCount(); // 총 숙소수 얻어오기
-        int pageLetter = 5; //한 페이지에 표현 할 개수
-        int totalPage = allCount /pageLetter; //총 페이지
-        if(allCount % pageLetter != 0) {
-            totalPage += 1;
+    public boolean deleteAccommodation(Integer accommodationId, Authentication authentication) {
+        if(accommodationMapper.getOneById(accommodationId).getUserId().equals(((UserSecurityVO) authentication.getPrincipal()).getUser().getUserId()) || authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"))){
+                accommodationMapper.deleteAccommodation(accommodationId);
+                return true;
         }
-        int end = pageNum * pageLetter;
-        int start = end + 1 - pageLetter;
-
-        ArrayList<AccommodationDTO> houseList = accommodationMapper.houseList(start,end);
-
-        model.addAttribute("allPage", totalPage);
-        model.addAttribute("houseList", houseList);
-
+        return false;
     }
+
+    @Override
+    public Integer getNumberAccommodationByUserId(Integer userId) {
+        return accommodationMapper.getNumberAccommodationByUserId(userId);
+    }
+
+    @Override
+    public void updateAddress(AccommodationAddressRequestDTO accommodationAddressRequestDTO, Integer accommodationId) {
+
+
+        accommodationMapper.updateAddress(
+                AccommodationVO.builder()
+                        .accommodationId(accommodationId)
+                        .address(accommodationAddressRequestDTO.getCountry()
+                                + accommodationAddressRequestDTO.getCity()
+                                + accommodationAddressRequestDTO.getDistrict()
+                                + accommodationAddressRequestDTO.getRoad()
+                                + accommodationAddressRequestDTO.getRoom()
+                        )
+                        .build());
+    }
+
+    @Override
+    public void updateHouse(AccommodationHouseRequestDTO accommodationHouseRequestDTO, Integer accommodationId) {
+        accommodationMapper.updateHouse(
+                AccommodationVO.builder()
+                .accommodationId(accommodationId)
+                .name(accommodationHouseRequestDTO.getName())
+                .type(accommodationHouseRequestDTO.getType())
+                .maxNumberOfGuest(accommodationHouseRequestDTO.getMaxNumberOfGuest())
+                .numberOfBedroom(accommodationHouseRequestDTO.getNumberOfBedroom())
+                .numberOfBed(accommodationHouseRequestDTO.getNumberOfBed())
+                .numberOfBathroom(accommodationHouseRequestDTO.getNumberOfBathroom())
+                .price(accommodationHouseRequestDTO.getPrice())
+                .contactNumber(accommodationHouseRequestDTO.getContactNumber())
+                .description(accommodationHouseRequestDTO.getDescription())
+                .build()
+        );
+    }
+
+    @Override
+    public List<AccommodationVO> searchAccommodation(SearchDTO searchDTO) {
+        return accommodationMapper.searchAccommodation(searchDTO);
+    }
+
+    @Override
+    public Integer countSearch(SearchDTO searchDTO) {
+        return accommodationMapper.countSearch(searchDTO);
+    }
+
 
 }

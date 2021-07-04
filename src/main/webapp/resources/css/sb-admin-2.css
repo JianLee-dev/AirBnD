@@ -2927,6 +2927,27 @@ fieldset:disabled a.btn {
   pointer-events: none;
 }
 
+
+.btn-trans {
+  font-weight: 400;
+  color: #4e73df;
+  text-decoration: none;
+}
+
+.btn-trans:hover {
+  color: #224abe;
+  text-decoration: #e12717;
+}
+
+.btn-trans:focus, .btn-trans.focus {
+  text-decoration: #e12717;
+}
+
+.btn-trans:disabled, .btn-trans.disabled {
+  color: #858796;
+  pointer-events: none;
+}
+
 .btn-lg, .btn-group-lg > .btn {
   padding: 0.5rem 1rem;
   font-size: 1.25rem;
@@ -4610,7 +4631,10 @@ input[type="button"].btn-block {
   border-bottom-right-radius: calc(0.35rem - 1px);
   border-bottom-left-radius: calc(0.35rem - 1px);
 }
-
+.wh450300 {
+width: 241px;
+height: 160.66px;
+}
 .card-deck .card {
   margin-bottom: 0.75rem;
 }
