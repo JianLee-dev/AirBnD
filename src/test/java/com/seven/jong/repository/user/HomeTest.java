@@ -17,26 +17,30 @@ public class HomeTest {
 
 	HomeController homeController;
 
-	  
-
-	  @Before
-	  public void setup() {
-	    MockitoAnnotations.initMocks(this);
+	@Before
+	public void setup() {
+		MockitoAnnotations.initMocks(this);
 
 	    homeController = new HomeController();
-	  }
+	}
 
-	  @Test
-	  public void testMockMvC() throws Exception {
-	    MockMvc mockMvc = MockMvcBuilders.standaloneSetup(homeController).build();
+	@Test
+	public void testHome() throws Exception {
+		MockMvc mockMvc = MockMvcBuilders.standaloneSetup(homeController).build();
 
 	    mockMvc.perform(MockMvcRequestBuilders.get("/"))
 	      .andExpect(MockMvcResultMatchers.status().isOk())
 	      .andExpect(MockMvcResultMatchers.view().name("home"));
-	  }
+	}
 
-	  @Test
-	  public void test() {
+	@Test
+	public void test() throws Exception {
+		MockMvc mockMvc = MockMvcBuilders.standaloneSetup(homeController).build();
 
-	  }
+	    mockMvc.perform(MockMvcRequestBuilders.get("/test"))
+	      .andExpect(MockMvcResultMatchers.status().isOk())
+	      .andExpect(MockMvcResultMatchers.view().name("home"));
+	}
 }
+
+
