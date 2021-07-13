@@ -42,7 +42,6 @@ function readURL(input){
 			
 				<div style="width:300px; margin: 0 auto;">
 					<form name="form" method="post" action="/board/writeSave?${_csrf.parameterName}=${_csrf.token}" enctype="multipart/form-data">
-						<!-- <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}" />  -->
 						<b>작성자</b><br>
 							<input type="text" name="writer" size="30" value="${loginUser }" readonly><br>
 						<b>제목</b><br>
